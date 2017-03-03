@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "LUdecomp.h"
+
+double **createMatrix(int N) {
+  double **M = (double **) malloc(N*sizeof(double*));
+  for (int i = 0; i < N; i++)
+    M[i] = (double*) malloc(N*sizeof(double));
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+      M[i][j] = (i == j) ? 1.0 : 0.0;
+  return M;
+}
+
+void LUdestroy(LUdecomp* LU) {
+  for (int i = 0; i < LU->N; i++)
+    free(LU->LU[i]);
+  free(LU);
+}
+
+void LUsolve(LUdecomp *decomp, const double *b, double *x){
+  
+  double y[decomp->N]; //initialize the y vector were going to use for the forward substitution
+  
+
+
+  //start of forward-solving part
+  y[0] = b[decomp->mutate[0]];
+  for (int i = 1; i < decomp->N; i++){
+    double sum = 0.0;
+    for (int j = 0; j < i; j++){
+      sum += decomp->LU[i][j]*y[j];
+    }
+    y[i] = b[decomp->mutate[i]] - sum;
+  }
+
+  //start of back-solving part
+  x[decomp->N-1] = y[decomp->N-1]/decomp->LU[decomp->N-1][decomp->N-1];
+
+  for (int i = decomp->N-2; i>=0; i--){
+    double sum = 0.0;
+    for (int j = i + 1;  j < decomp->N; j++){
+      sum += decomp->LU[i][j]*x[j];
+    }
+    x[i] = (1/decomp->LU[i][i])*(y[i] - sum);
+  }
+  
+
+  return; 
+}
+
+LUdecomp *LUdecompose(int N, const double **A){
+  LUdecomp *LU = (LUdecomp*) malloc(sizeof(LUdecomp));
+  LU->N = N;
+  LU->LU = createMatrix(N);
+  LU->mutate = (short *) malloc(N*sizeof(short));
+  LU->d = +1;
+
+  // Clone A into LU
+  double **A_ = LU->LU;
+  for (int i = 0; i < N; i++)
+    for(int j = 0; j<N; j++)
+      A_[i][j] = A[i][j];
+  for (int i = 0; i < N; i++)
+    LU->mutate[i] = (short) i;
+
+  double result = 0.0;
+  double p = 0.0;
+  int n = 0;
+  for (int j = 0; j < N; j++){
+    for (int i = 0; i <= j; i++){
+      result += (LU->LU[i][j] * LU->LU[i][j]);
+      LU->LU[i][j] = (LU->LU[i][j] - result);
+
+    }
+    p = fabs(LU->LU[j][j]);
+    n = j;
+    for (int i = j + 1; i < N; i++){
+      result = 0.0;
+      result += (LU->LU[i][j] * LU->LU[i][j]);
+      LU->LU[i][j] = (LU->LU[i][j] - result);
+      if (fabs(LU->LU[i][j]) > p){
+	p = fabs(LU->LU[i][j]);
+	n = i;
+      }
+
+
+    }
+	if (p == 0.0){
+	  return NULL;
+	}
+      if (n != j){
+	short mutswap = 0;
+       
+	double* temp = LU->LU[n];
+	LU->LU[n] = LU->LU[j];
+	LU->LU[j] = temp;
+       
+	mutswap = LU->mutate[n];
+	LU->mutate[n] = LU->mutate[j];
+	LU->mutate[j] = mutswap;
+	LU->d = -1*LU->d;
+      }
+      for (int i = j+1; i < N; i++){
+	LU->LU[i][j] = LU->LU[i][j]/LU->LU[j][j];
+      }
+
+  }
+  
+
+
+  return LU;
+}

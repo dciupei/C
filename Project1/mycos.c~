@@ -1,0 +1,7 @@
+#include <math.h>
+
+float mycos( float x ) {
+  x = fabsf(x);
+  const int n = floorf(x/(2*M_PI));
+
+}

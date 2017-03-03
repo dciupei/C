@@ -1,0 +1,127 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "LUdecomp.h"
+
+
+int main(){
+
+
+  int N = 0;
+
+  scanf("%d", &N);
+  //printf("N value = %i\n", N);                                                              
+  double xySource[N][2];
+  double xyTarget[N][2];
+
+  for(int i = 0; i < N; i++){
+    scanf("%lf %lf", &xySource[i][0], &xySource[i][1]);
+  }
+  for(int i = 0; i < N; i++){
+    scanf("%lf %lf", &xyTarget[i][0], &xyTarget[i][1]);
+  }
+
+  double** A = (double**)malloc(2*N*sizeof(double*));;
+  for(int i = 0; i < 2*N; i++){
+    A[i] = (double*)malloc(8*sizeof(double));;
+  }
+
+  int count = 0;
+  int count1 = 0;
+  int count2 = 0;
+  int count3 = 0;
+  int count4 = 0;
+  int count5 = 0;
+  int count6 = 0;
+  int count7 = 0;
+
+  for(int i = 0; i < 2*N; i ++){
+    if(i % 2 == 0){
+      A[i][0] = xySource[count++][0];
+      A[i][1] = xySource[count1++][1];
+      A[i][2] = 1;
+      A[i][3] = 0;
+      A[i][4] = 0;
+      A[i][5] = 0;
+      A[i][6] = (-1)*(xySource[count2][0])*(xyTarget[count2][0]);
+      count2++;
+      A[i][7] = (-1)*(xySource[count3][1])*(xyTarget[count3][0]);
+      count3++;
+
+    }else{
+      A[i][0] = 0;
+      A[i][1] = 0;
+      A[i][2] = 0;
+      A[i][3] = xySource[count4++][0];
+      A[i][4] = xySource[count5++][1];
+      A[i][5] = 1;
+      A[i][6] = (-1)*(xySource[count6][0])*(xyTarget[count6][1]);
+      count6++;
+      A[i][7] = (-1)*(xySource[count7][1])*(xyTarget[count7][1]);
+      count7++;
+
+    }
+  }
+
+  double* b = (double*)malloc(2*N*sizeof(double));;
+  count = 0;
+  for(int j = 0; j < 2*N; j += 2){
+    b[j] = xyTarget[count][0];
+    b[j+1] = xyTarget[count++][1];
+  }
+
+  double* x = (double*)malloc(8*sizeof(double));;
+  for(int j = 0; j < 8; j++){
+    x[j] = 0.0;
+}
+
+  double** aTranspose = (double**)malloc(8*sizeof(double*));
+  for(int i = 0; i < 8; i++){
+    aTranspose[i] = (double*)malloc(8*sizeof(double));
+  }
+ 
+  double* bTranspose = (double*)malloc(8*sizeof(double));
+
+  if(N > 4){
+    double result = 0.0;
+    for(int i = 0; i < 8; i++){
+      for(int j = i; j < 8; j++){
+	result = 0.0;
+	for(int k = 0; k < 2*N; k++){
+	  result += A[k][i]*A[k][j];
+	}
+	aTranspose[i][j] = result;
+      }
+    }
+    for(int i = 0; i < 8; i++)
+      for(int j = 0; j < i; j++)
+	aTranspose[i][j] = aTranspose[j][i];
+
+    result = 0.0;    
+    for(int i = 0; i < 8; i++){
+      result = 0.0;
+      for(int j = 0; j < 2*N; j++)
+	result += A[j][i] * b[j];
+      bTranspose[i] = result;
+    }
+  }
+  
+  if(N == 4){
+    LUdecomp* A_decompose = LUdecompose(2*N, (const double**)A);  
+    LUsolve(A_decompose, b, x);
+  }else{
+
+  }
+  
+  for(int i = 0; i < 3; i++)
+    printf("%.10lf ", x[i]);
+  printf("\n");
+  for(int i = 3; i < 6; i++)
+    printf("%.10lf ", x[i]);
+  printf("\n");
+  for(int i = 6; i < 8; i++)
+    printf("%.10lf ", x[i]);
+  double one = 1.0;
+  printf("%.10lf ", one);
+  printf("\n");
+  return 0;
+}
