@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#define attempt 16 
+#include <errno.h>
+
+
+int ok(int fd, char *word){
+  char buffer[attempt];
+  word[attempt] = '\0';
+  char *have =NULL;
+  long actual;
+  long top = ((lseek(fd,0,SEEK_END)/attempt)+1);
+  long bot = 0;
+  printf("%i\n", top);
+  for(long i = strlen(word); i < attempt - 1; i++){
+    word[i] = ' ';
+  }
+
+  word[attempt] = '\0';
+  char *want = word;
+
+  while(bot <= top){
+    int mid = (bot+top)/2;
+    lseek(fd,mid*attempt,SEEK_SET);
+
+
+    actual = read(fd,buffer,attempt);
+    write (fd, buffer,actual);
+    buffer[attempt-1] = '\0';
+    have = buffer;
+    int comp = strcmp(want, have);
+    if(comp == 0){
+      return 1;
+    }
+    if(comp < 0){
+      top = mid;
+    }
+    if(comp > 0){
+      bot = mid+1;
+    }
+    if(bot >= top){
+      return 0;
+    }
+
+  }
+
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+
+  int fd =0;
+  char word[attempt];
+  if (!argv[1]){
+    fprintf(stderr, "Error: No word inputed for searching!\n");
+    exit(1);
+  } else{
+    strcpy(word, argv[1]);
+  }
+  fd = open ("webster", O_RDONLY,0);
+ 
+  if(fd < 0){
+    fprintf(stderr, "Error: %s: Can't open %s for reading -- %s\n", argv[0],"webster",strerror (errno));
+    exit(1);
+  }
+  
+  word[attempt-1] = '\0';
+  int result = ok(fd, word);
+
+  if(result == 1){
+    printf("YES\n");
+  }else{
+    printf("NO\n");
+    }
+
+  close (fd);
+  return 0;
+}

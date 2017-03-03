@@ -1,0 +1,181 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include "hash.h"
+
+float HashLoadfactor(HashTable* table);
+void HashRehash(HashTable* table);
+
+float HashLoadfactor(HashTable* table){
+    return (float)((table->Entries)/(table->Size));
+}
+
+
+HashTable* HashInit(int buckets){
+    HashTable* table;
+    if((table = malloc(sizeof(HashTable)))==NULL){  //create the struct,make room
+        return NULL;
+    }
+    // allocates memory for the array.
+    if((table->LL = malloc(buckets*sizeof(Node*)))== NULL){
+        return NULL;
+    }
+    table->Size = buckets;
+    table->Entries = 0;
+    return table;
+}
+
+
+void HashInsert(HashTable* ht, char* str, void* val){
+    if((HashLoadfactor(ht)) >= 0.8){
+        HashRehash(ht);
+    }
+    int Loc = Hash(str)%(ht->Size);
+    Node *LL = ht->LL[Loc];
+    if(LL == NULL){
+        Node *node = malloc(sizeof(Node));  //allocate memory for the new node
+        node->data = str;                   //set the node data.
+        node->count = val;
+        node->next = NULL;
+        ht->LL[Loc] = node;            //put the node into the location.
+        ht->Entries++;
+        printf("%s\n", node->data);
+    }
+    else{
+        Node *new = malloc(sizeof(Node));
+        new->data = str;
+        new->count = val;
+        new->next = LL;
+        ht->LL[Loc] = new;
+        ht->Entries++;
+        
+    }
+    
+    
+}
+
+
+unsigned long HT_hash( char *str){
+    //sdbm
+    unsigned long hash = 0;
+    int c;
+    
+    while ((c = *str++))
+        hash = c + (hash << 6) + (hash << 16) - hash;
+        
+        return hash;
+}
+
+int HashSearch(HashTable* ht, char* key){
+    Node* LL;
+    int size = ht->Size;
+    int location = (int)HT_hash(key) % size;
+    if(ht->LL[location] == NULL){
+        return 0;
+    }else{
+        LL = ht->LL[location];
+        while(LL != NULL){
+            if(strcmp(key,LL->data) == 0){
+                int num = (int)LL->count++;
+		//    LL->count = num;
+                return 1;
+            }else{
+                LL = LL->next;
+            }
+        }
+    }
+    return 0;
+}
+
+void HashRehash(HashTable* table){
+    HashTable* old = table;
+    printf("new size will be: %i\n",(int)(table->Size)*2);
+    HashTable* newtable = HashInit((table->Size)*2);  //double the table size.
+    Node* Current = NULL;
+    //loop through the old table re-entering into the new table.
+    int i = 0;
+    while (i < (table->Size)){
+        Current = old->LL[i];
+        
+        if(Current == NULL){
+            i++;
+        }
+        else{
+            do{
+                HashInsert(newtable, Current->data, Current->count);
+            }while((Current = Current->next) != NULL);
+            i++;
+        }
+    }
+    free(Current);
+    free(old->LL);
+    *old = *newtable;
+    free(newtable);
+}
+
+void* HashApply(HashTable* ht, void (*func)(char* key, void* val)){
+    int i = 0;
+    Node *LL;
+    while(i < ht->Size){              //move through the array
+        if(ht->LL[i] == NULL){     //if null move on.
+            i++;
+            continue;
+        }
+        else{                           //not null, enter linked list.
+            LL = ht->LL[i];
+            while(LL !=NULL){             //if a node, apply function and move on.
+                func(LL->data,LL->count);
+                LL = LL->next;
+            }
+        }
+        i++;
+    }
+    return NULL;
+}
+
+
+void HashFree(HashTable* ht){
+    Node* Ncurrent;
+    Node* Ntemp;
+    int i = 0;
+    while(i < ht->Size){
+        if((ht->LL[i]) == NULL){
+            i++;
+            continue;
+        }
+        Ncurrent = ht->LL[i];
+        do{
+            Ntemp = Ncurrent->next;
+            free(Ncurrent);
+            Ncurrent = Ntemp;
+        }while((Ncurrent) != NULL);
+        i++;
+    }
+    free(ht->LL);
+    free(ht);            
+}
+
+int main(int argc, char* argv[]){
+    char usr;
+    int* val =malloc(sizeof(int));
+    *val = 1;
+    uintptr_t start = 1;
+    int buckets = 10;
+    HashTable* table = HashInit(buckets);
+   
+  
+    // if(&usr != NULL){
+          //  val = HashSearch( table, &usr );
+    // if(val == 1){
+    HashInsert(table, "cars", val);
+    // }
+    //    }
+        
+    
+}
+
+
+
+
+
+
